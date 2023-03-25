@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 using SQLitePCL.pretty;
 
 namespace Emby.Server.Implementations.Data
@@ -13,12 +14,15 @@ namespace Emby.Server.Implementations.Data
 
         private SQLiteDatabaseConnection? _db;
 
+        private ILogger<BaseSqliteRepository> _logger;
+
         private bool _disposed = false;
 
-        public ManagedConnection(SQLiteDatabaseConnection db, SemaphoreSlim writeLock)
+        public ManagedConnection(SQLiteDatabaseConnection db, SemaphoreSlim writeLock, ILogger<BaseSqliteRepository> logger)
         {
             _db = db;
             _writeLock = writeLock;
+            _logger = logger;
         }
 
         public IStatement PrepareStatement(string sql)

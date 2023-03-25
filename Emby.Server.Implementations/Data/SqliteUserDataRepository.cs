@@ -99,8 +99,8 @@ namespace Emby.Server.Implementations.Data
                         continue;
                     }
 
-                    statement.TryBind("@UserId", user.Id);
-                    statement.TryBind("@InternalUserId", user.InternalId);
+                    statement.TryBind("@UserId", user.Id, Logger);
+                    statement.TryBind("@InternalUserId", user.InternalId, Logger);
 
                     statement.MoveNext();
                     statement.Reset();
@@ -114,11 +114,13 @@ namespace Emby.Server.Implementations.Data
 
             using (var statement = PrepareStatement(db, "select DISTINCT UserId from UserData where UserId not null"))
             {
-                foreach (var row in statement.ExecuteQuery())
+                foreach (var row in statement.ExecuteQuery(Logger))
                 {
                     try
                     {
-                        list.Add(row[0].ReadGuidFromBlob());
+                        var read = row[0].ReadGuidFromBlob();
+                        ApplicationHost.Extract("ReadGuidFromBlob 2 {Object}", read);
+                        list.Add(read);
                     }
                     catch (Exception ex)
                     {
@@ -174,58 +176,58 @@ namespace Emby.Server.Implementations.Data
                 connection.RunInTransaction(
                     db =>
                     {
-                        SaveUserData(db, internalUserId, key, userData);
+                        SaveUserData(db, internalUserId, key, userData, Logger);
                     },
                     TransactionMode);
             }
         }
 
-        private static void SaveUserData(IDatabaseConnection db, long internalUserId, string key, UserItemData userData)
+        private static void SaveUserData(IDatabaseConnection db, long internalUserId, string key, UserItemData userData, ILogger<BaseSqliteRepository> logger)
         {
             using (var statement = db.PrepareStatement("replace into UserDatas (key, userId, rating,played,playCount,isFavorite,playbackPositionTicks,lastPlayedDate,AudioStreamIndex,SubtitleStreamIndex) values (@key, @userId, @rating,@played,@playCount,@isFavorite,@playbackPositionTicks,@lastPlayedDate,@AudioStreamIndex,@SubtitleStreamIndex)"))
             {
-                statement.TryBind("@userId", internalUserId);
-                statement.TryBind("@key", key);
+                statement.TryBind("@userId", internalUserId, logger);
+                statement.TryBind("@key", key, logger);
 
                 if (userData.Rating.HasValue)
                 {
-                    statement.TryBind("@rating", userData.Rating.Value);
+                    statement.TryBind("@rating", userData.Rating.Value, logger);
                 }
                 else
                 {
-                    statement.TryBindNull("@rating");
+                    statement.TryBindNull("@rating", logger);
                 }
 
-                statement.TryBind("@played", userData.Played);
-                statement.TryBind("@playCount", userData.PlayCount);
-                statement.TryBind("@isFavorite", userData.IsFavorite);
-                statement.TryBind("@playbackPositionTicks", userData.PlaybackPositionTicks);
+                statement.TryBind("@played", userData.Played, logger);
+                statement.TryBind("@playCount", userData.PlayCount, logger);
+                statement.TryBind("@isFavorite", userData.IsFavorite, logger);
+                statement.TryBind("@playbackPositionTicks", userData.PlaybackPositionTicks, logger);
 
                 if (userData.LastPlayedDate.HasValue)
                 {
-                    statement.TryBind("@lastPlayedDate", userData.LastPlayedDate.Value.ToDateTimeParamValue());
+                    statement.TryBind("@lastPlayedDate", userData.LastPlayedDate.Value.ToDateTimeParamValue(), logger);
                 }
                 else
                 {
-                    statement.TryBindNull("@lastPlayedDate");
+                    statement.TryBindNull("@lastPlayedDate", logger);
                 }
 
                 if (userData.AudioStreamIndex.HasValue)
                 {
-                    statement.TryBind("@AudioStreamIndex", userData.AudioStreamIndex.Value);
+                    statement.TryBind("@AudioStreamIndex", userData.AudioStreamIndex.Value, logger);
                 }
                 else
                 {
-                    statement.TryBindNull("@AudioStreamIndex");
+                    statement.TryBindNull("@AudioStreamIndex", logger);
                 }
 
                 if (userData.SubtitleStreamIndex.HasValue)
                 {
-                    statement.TryBind("@SubtitleStreamIndex", userData.SubtitleStreamIndex.Value);
+                    statement.TryBind("@SubtitleStreamIndex", userData.SubtitleStreamIndex.Value, logger);
                 }
                 else
                 {
-                    statement.TryBindNull("@SubtitleStreamIndex");
+                    statement.TryBindNull("@SubtitleStreamIndex", logger);
                 }
 
                 statement.MoveNext();
@@ -246,7 +248,7 @@ namespace Emby.Server.Implementations.Data
                     {
                         foreach (var userItemData in userDataList)
                         {
-                            SaveUserData(db, internalUserId, userItemData.Key, userItemData);
+                            SaveUserData(db, internalUserId, userItemData.Key, userItemData, Logger);
                         }
                     },
                     TransactionMode);
@@ -277,12 +279,14 @@ namespace Emby.Server.Implementations.Data
             {
                 using (var statement = connection.PrepareStatement("select key,userid,rating,played,playCount,isFavorite,playbackPositionTicks,lastPlayedDate,AudioStreamIndex,SubtitleStreamIndex from UserDatas where key =@Key and userId=@UserId"))
                 {
-                    statement.TryBind("@UserId", userId);
-                    statement.TryBind("@Key", key);
+                    statement.TryBind("@UserId", userId, Logger);
+                    statement.TryBind("@Key", key, Logger);
 
-                    foreach (var row in statement.ExecuteQuery())
+                    foreach (var row in statement.ExecuteQuery(Logger))
                     {
-                        return ReadRow(row);
+                        var readRow = ReadRow(row);
+                        ApplicationHost.Extract("AnotherReadRow {Object}", readRow);
+                        return readRow;
                     }
                 }
 
@@ -320,11 +324,13 @@ namespace Emby.Server.Implementations.Data
             {
                 using (var statement = connection.PrepareStatement("select key,userid,rating,played,playCount,isFavorite,playbackPositionTicks,lastPlayedDate,AudioStreamIndex,SubtitleStreamIndex from UserDatas where userId=@UserId"))
                 {
-                    statement.TryBind("@UserId", userId);
+                    statement.TryBind("@UserId", userId, Logger);
 
-                    foreach (var row in statement.ExecuteQuery())
+                    foreach (var row in statement.ExecuteQuery(Logger))
                     {
-                        list.Add(ReadRow(row));
+                        var readRow = ReadRow(row);
+                        list.Add(readRow);
+                        ApplicationHost.Extract("LastReadRow {Object}", readRow);
                     }
                 }
             }

@@ -114,7 +114,7 @@ namespace Emby.Server.Implementations.Data
             WriteLock.Wait();
             if (WriteConnection is not null)
             {
-                return new ManagedConnection(WriteConnection, WriteLock);
+                return new ManagedConnection(WriteConnection, WriteLock, Logger);
             }
 
             WriteConnection = SQLite3.Open(
@@ -157,7 +157,7 @@ namespace Emby.Server.Implementations.Data
             // Configuration and pragmas can affect VACUUM so it needs to be last.
             WriteConnection.Execute("VACUUM");
 
-            return new ManagedConnection(WriteConnection, WriteLock);
+            return new ManagedConnection(WriteConnection, WriteLock, Logger);
         }
 
         public IStatement PrepareStatement(ManagedConnection connection, string sql)
@@ -185,7 +185,7 @@ namespace Emby.Server.Implementations.Data
                 {
                     using (var statement = PrepareStatement(db, "select DISTINCT tbl_name from sqlite_master"))
                     {
-                        foreach (var row in statement.ExecuteQuery())
+                        foreach (var row in statement.ExecuteQuery(Logger))
                         {
                             if (string.Equals(name, row.GetString(0), StringComparison.OrdinalIgnoreCase))
                             {

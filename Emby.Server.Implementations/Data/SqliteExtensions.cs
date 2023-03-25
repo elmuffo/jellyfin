@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using Microsoft.Extensions.Logging;
 using SQLitePCL.pretty;
 
 namespace Emby.Server.Implementations.Data
@@ -237,10 +238,11 @@ namespace Emby.Server.Implementations.Data
             throw new ArgumentException("Invalid param name: " + name, nameof(name));
         }
 
-        public static void TryBind(this IStatement statement, string name, double value)
+        public static void TryBind(this IStatement statement, string name, double value, ILogger<BaseSqliteRepository> logger)
         {
             if (statement.BindParameters.TryGetValue(name, out IBindParameter bindParam))
             {
+                logger?.LogInformation("{Key}='{Value}'", name, value);
                 bindParam.Bind(value);
             }
             else
@@ -249,16 +251,18 @@ namespace Emby.Server.Implementations.Data
             }
         }
 
-        public static void TryBind(this IStatement statement, string name, string value)
+        public static void TryBind(this IStatement statement, string name, string value, ILogger<BaseSqliteRepository> logger)
         {
             if (statement.BindParameters.TryGetValue(name, out IBindParameter bindParam))
             {
                 if (value is null)
                 {
+                    logger?.LogInformation("{Key}='{Value}'", name, value);
                     bindParam.BindNull();
                 }
                 else
                 {
+                    logger?.LogInformation("{Key}='{Value}'", name, value);
                     bindParam.Bind(value);
                 }
             }
@@ -268,10 +272,11 @@ namespace Emby.Server.Implementations.Data
             }
         }
 
-        public static void TryBind(this IStatement statement, string name, bool value)
+        public static void TryBind(this IStatement statement, string name, bool value, ILogger<BaseSqliteRepository> logger)
         {
             if (statement.BindParameters.TryGetValue(name, out IBindParameter bindParam))
             {
+                logger?.LogInformation("{Key}='{Value}'", name, value);
                 bindParam.Bind(value);
             }
             else
@@ -280,10 +285,11 @@ namespace Emby.Server.Implementations.Data
             }
         }
 
-        public static void TryBind(this IStatement statement, string name, float value)
+        public static void TryBind(this IStatement statement, string name, float value, ILogger<BaseSqliteRepository> logger)
         {
             if (statement.BindParameters.TryGetValue(name, out IBindParameter bindParam))
             {
+                logger?.LogInformation("{Key}='{Value}'", name, value);
                 bindParam.Bind(value);
             }
             else
@@ -292,10 +298,11 @@ namespace Emby.Server.Implementations.Data
             }
         }
 
-        public static void TryBind(this IStatement statement, string name, int value)
+        public static void TryBind(this IStatement statement, string name, int value, ILogger<BaseSqliteRepository> logger)
         {
             if (statement.BindParameters.TryGetValue(name, out IBindParameter bindParam))
             {
+                logger?.LogInformation("{Key}='{Value}'", name, value);
                 bindParam.Bind(value);
             }
             else
@@ -304,12 +311,13 @@ namespace Emby.Server.Implementations.Data
             }
         }
 
-        public static void TryBind(this IStatement statement, string name, Guid value)
+        public static void TryBind(this IStatement statement, string name, Guid value, ILogger<BaseSqliteRepository> logger)
         {
             if (statement.BindParameters.TryGetValue(name, out IBindParameter bindParam))
             {
                 Span<byte> byteValue = stackalloc byte[16];
                 value.TryWriteBytes(byteValue);
+                logger?.LogInformation("{Key}='{Value}'", name, value);
                 bindParam.Bind(byteValue);
             }
             else
@@ -318,10 +326,11 @@ namespace Emby.Server.Implementations.Data
             }
         }
 
-        public static void TryBind(this IStatement statement, string name, DateTime value)
+        public static void TryBind(this IStatement statement, string name, DateTime value, ILogger<BaseSqliteRepository> logger)
         {
             if (statement.BindParameters.TryGetValue(name, out IBindParameter bindParam))
             {
+                logger?.LogInformation("{Key}='{Value}'", name, value.ToDateTimeParamValue());
                 bindParam.Bind(value.ToDateTimeParamValue());
             }
             else
@@ -330,10 +339,11 @@ namespace Emby.Server.Implementations.Data
             }
         }
 
-        public static void TryBind(this IStatement statement, string name, long value)
+        public static void TryBind(this IStatement statement, string name, long value, ILogger<BaseSqliteRepository> logger)
         {
             if (statement.BindParameters.TryGetValue(name, out IBindParameter bindParam))
             {
+                logger?.LogInformation("{Key}='{Value}'", name, value);
                 bindParam.Bind(value);
             }
             else
@@ -342,10 +352,11 @@ namespace Emby.Server.Implementations.Data
             }
         }
 
-        public static void TryBind(this IStatement statement, string name, ReadOnlySpan<byte> value)
+        public static void TryBind(this IStatement statement, string name, ReadOnlySpan<byte> value, ILogger<BaseSqliteRepository> logger)
         {
             if (statement.BindParameters.TryGetValue(name, out IBindParameter bindParam))
             {
+                logger?.LogInformation("{Key}='{Value}'", name, Convert.ToBase64String(value));
                 bindParam.Bind(value);
             }
             else
@@ -354,10 +365,11 @@ namespace Emby.Server.Implementations.Data
             }
         }
 
-        public static void TryBindNull(this IStatement statement, string name)
+        public static void TryBindNull(this IStatement statement, string name, ILogger<BaseSqliteRepository> logger)
         {
             if (statement.BindParameters.TryGetValue(name, out IBindParameter bindParam))
             {
+                logger.LogInformation("{Key}:NULL", name);
                 bindParam.BindNull();
             }
             else
@@ -366,84 +378,107 @@ namespace Emby.Server.Implementations.Data
             }
         }
 
-        public static void TryBind(this IStatement statement, string name, DateTime? value)
+        public static void TryBind(this IStatement statement, string name, DateTime? value, ILogger<BaseSqliteRepository> logger)
         {
             if (value.HasValue)
             {
-                TryBind(statement, name, value.Value);
+                TryBind(statement, name, value.Value, logger);
             }
             else
             {
-                TryBindNull(statement, name);
+                TryBindNull(statement, name, logger);
             }
         }
 
-        public static void TryBind(this IStatement statement, string name, Guid? value)
+        public static void TryBind(this IStatement statement, string name, Guid? value, ILogger<BaseSqliteRepository> logger)
         {
             if (value.HasValue)
             {
-                TryBind(statement, name, value.Value);
+                TryBind(statement, name, value.Value, logger);
             }
             else
             {
-                TryBindNull(statement, name);
+                TryBindNull(statement, name, logger);
             }
         }
 
-        public static void TryBind(this IStatement statement, string name, double? value)
+        public static void TryBind(this IStatement statement, string name, double? value, ILogger<BaseSqliteRepository> logger)
         {
             if (value.HasValue)
             {
-                TryBind(statement, name, value.Value);
+                TryBind(statement, name, value.Value, logger);
             }
             else
             {
-                TryBindNull(statement, name);
+                TryBindNull(statement, name, logger);
             }
         }
 
-        public static void TryBind(this IStatement statement, string name, int? value)
+        public static void TryBind(this IStatement statement, string name, int? value, ILogger<BaseSqliteRepository> logger)
         {
             if (value.HasValue)
             {
-                TryBind(statement, name, value.Value);
+                TryBind(statement, name, value.Value, logger);
             }
             else
             {
-                TryBindNull(statement, name);
+                TryBindNull(statement, name, logger);
             }
         }
 
-        public static void TryBind(this IStatement statement, string name, float? value)
+        public static void TryBind(this IStatement statement, string name, float? value, ILogger<BaseSqliteRepository> logger)
         {
             if (value.HasValue)
             {
-                TryBind(statement, name, value.Value);
+                TryBind(statement, name, value.Value, logger);
             }
             else
             {
-                TryBindNull(statement, name);
+                TryBindNull(statement, name, logger);
             }
         }
 
-        public static void TryBind(this IStatement statement, string name, bool? value)
+        public static void TryBind(this IStatement statement, string name, bool? value, ILogger<BaseSqliteRepository> logger)
         {
             if (value.HasValue)
             {
-                TryBind(statement, name, value.Value);
+                TryBind(statement, name, value.Value, logger);
             }
             else
             {
-                TryBindNull(statement, name);
+                TryBindNull(statement, name, logger);
             }
         }
 
-        public static IEnumerable<IReadOnlyList<ResultSetValue>> ExecuteQuery(this IStatement statement)
+        public static IEnumerable<IReadOnlyList<ResultSetValue>> ExecuteQuery(this IStatement statement, ILogger<BaseSqliteRepository> logger)
         {
+            logger.LogInformation("SQL: {Query}", statement.SQL);
             while (statement.MoveNext())
             {
                 yield return statement.Current;
             }
+        }
+
+        public class ColumnInfo
+        {
+            public string Name { get; set; }
+
+            // public string DatabaseName { get; set; }
+
+            // public string TableName { get; set; }
+
+            // public string OriginName { get; set; }
+
+            // public string DeclaredType { get; set; }
+        }
+
+        public class Root
+        {
+            public ColumnInfo ColumnInfo { get; set; }
+
+            // public int SQLiteType { get; set; }
+
+            // public int Length { get; set; }
         }
     }
 }

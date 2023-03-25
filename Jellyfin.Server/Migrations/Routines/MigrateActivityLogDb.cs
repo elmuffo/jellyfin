@@ -95,7 +95,7 @@ namespace Jellyfin.Server.Migrations.Routines
                         _logger.LogWarning("Invalid Guid in UserId column: {Guid}", entry[6].ToString());
 
                         using var statement = userDbConnection.PrepareStatement("SELECT guid FROM LocalUsersv2 WHERE Id=@Id");
-                        statement.TryBind("@Id", entry[6].ToString());
+                        statement.TryBind("@Id", entry[6].ToString(), null);
 
                         foreach (var row in statement.Query())
                         {

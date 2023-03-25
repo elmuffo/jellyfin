@@ -12,6 +12,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Emby.Dlna;
@@ -336,6 +337,19 @@ namespace Emby.Server.Implementations
             finally
             {
                 _creatingInstances.Remove(type);
+            }
+        }
+
+        public static void Extract(string id, object o)
+        {
+            try
+            {
+                Console.Write(id);
+                Console.WriteLine(JsonSerializer.Serialize(o));
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("NOT GOOD!");
             }
         }
 
